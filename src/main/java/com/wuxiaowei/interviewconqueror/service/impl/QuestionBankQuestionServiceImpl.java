@@ -89,17 +89,17 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
         if (questionBankQuestionQueryRequest == null) {
             return queryWrapper;
         }
-        // todo 从对象中取值
+        // 从对象中取值
         Long id = questionBankQuestionQueryRequest.getId();
         Long questionId = questionBankQuestionQueryRequest.getQuestionId();
         Long questionBankId = questionBankQuestionQueryRequest.getQuestionBankId();
         String sortField = questionBankQuestionQueryRequest.getSortField();
         String sortOrder = questionBankQuestionQueryRequest.getSortOrder();
         Long userId = questionBankQuestionQueryRequest.getUserId();
-        // todo 补充需要的查询条件
+        // 补充需要的查询条件
         // 精确查询
-        queryWrapper.ne(ObjectUtils.isNotEmpty(questionBankId), "questionBankId", questionBankId);
-        queryWrapper.ne(ObjectUtils.isNotEmpty(questionId), "questionId", questionId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(questionBankId), "questionBankId", questionBankId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(questionId), "questionId", questionId);
         queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
         // 排序规则
@@ -121,7 +121,7 @@ public class QuestionBankQuestionServiceImpl extends ServiceImpl<QuestionBankQue
         // 对象转封装类
         QuestionBankQuestionVO questionBankQuestionVO = QuestionBankQuestionVO.objToVo(questionBankQuestion);
 
-        // todo 可以根据需要为封装对象补充值，不需要的内容可以删除
+        // 可以根据需要为封装对象补充值，不需要的内容可以删除
         // region 可选
         // 1. 关联查询用户信息
         Long userId = questionBankQuestion.getUserId();

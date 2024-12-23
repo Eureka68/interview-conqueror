@@ -18,11 +18,13 @@ import com.wuxiaowei.interviewconqueror.model.entity.Question;
 import com.wuxiaowei.interviewconqueror.model.entity.QuestionBank;
 import com.wuxiaowei.interviewconqueror.model.entity.User;
 import com.wuxiaowei.interviewconqueror.model.vo.QuestionBankVO;
+import com.wuxiaowei.interviewconqueror.service.QuestionBankQuestionService;
 import com.wuxiaowei.interviewconqueror.service.QuestionBankService;
 import com.wuxiaowei.interviewconqueror.service.QuestionService;
 import com.wuxiaowei.interviewconqueror.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -47,6 +49,9 @@ public class QuestionBankController {
 
     @Resource
     private QuestionService questionService;
+
+    @Resource
+    private QuestionBankQuestionService questionBankQuestionService;
 
     // region 增删改查
 
@@ -86,6 +91,7 @@ public class QuestionBankController {
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @Transactional
     public BaseResponse<Boolean> deleteQuestionBank(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -99,6 +105,8 @@ public class QuestionBankController {
         if (!oldQuestionBank.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        // Todo: 删除题库和题目关联数据
+        // questionBankQuestionService.removeByQuestionBankId();
         // 操作数据库
         boolean result = questionBankService.removeById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -146,19 +154,24 @@ public class QuestionBankController {
         // 查询数据库
         QuestionBank questionBank = questionBankService.getById(id);
         ThrowUtils.throwIf(questionBank == null, ErrorCode.NOT_FOUND_ERROR);
-        // 获取封装类
+        // 查询题库封装类
         QuestionBankVO questionBankVO = questionBankService.getQuestionBankVO(questionBank, request);
         // 是否要关联查询题库下的题目列表
         boolean needQueryQuestionList = questionBankQueryRequest.isNeedQueryQuestionList();
-        if(needQueryQuestionList){
+        if (needQueryQuestionList) {
             QuestionQueryRequest questionQueryRequest = new QuestionQueryRequest();
             questionQueryRequest.setQuestionBankId(id);
+            // 可以按需传递更多参数
+            questionQueryRequest.setPageSize(questionBankQueryRequest.getPageSize());
+            questionQueryRequest.setCurrent(questionBankQueryRequest.getCurrent());
+            // 封装 question => questionVO
             Page<Question> questionPage = questionService.listQuestionPage(questionQueryRequest);
-            questionBankVO.setQuestionPage(questionPage);
+            questionBankVO.setQuestionPage(questionService.getQuestionVOPage(questionPage, request));
         }
-
+        // 获取封装类
         return ResultUtils.success(questionBankVO);
     }
+
 
     /**
      * 分页获取题库列表（仅管理员可用）
@@ -189,8 +202,8 @@ public class QuestionBankController {
                                                                HttpServletRequest request) {
         long current = questionBankQueryRequest.getCurrent();
         long size = questionBankQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        //// 限制爬虫
+        //ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         // 查询数据库
         Page<QuestionBank> questionBankPage = questionBankService.page(new Page<>(current, size),
                 questionBankService.getQueryWrapper(questionBankQueryRequest));

@@ -1,6 +1,7 @@
 package com.wuxiaowei.interviewconqueror.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -92,7 +93,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         String searchText = questionQueryRequest.getSearchText();
         String sortField = questionQueryRequest.getSortField();
         String sortOrder = questionQueryRequest.getSortOrder();
-        List<String> tagList = questionQueryRequest.getTags();
+        List<String> tagList = questionQueryRequest.getTagList();
         Long userId = questionQueryRequest.getUserId();
         // todo 补充需要的查询条件
         // 从多字段中搜索
@@ -205,6 +206,14 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 queryWrapper.in("id", questionId);
             }
         }
+        // 3. 根据标签查询题目id
+        if(CollUtil.isNotEmpty(questionQueryRequest.getTagList())){
+            List<String> tagList = questionQueryRequest.getTagList();
+            for (String tag : tagList) {
+                queryWrapper.like("tags", "\"" + tag + "\"");
+            }
+        }
+
         return this.page(new Page<>(current, pageSize), queryWrapper);
     }
 }
