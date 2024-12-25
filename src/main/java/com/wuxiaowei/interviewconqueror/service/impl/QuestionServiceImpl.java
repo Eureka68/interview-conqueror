@@ -1,7 +1,6 @@
 package com.wuxiaowei.interviewconqueror.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -9,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wuxiaowei.interviewconqueror.common.ErrorCode;
 import com.wuxiaowei.interviewconqueror.constant.CommonConstant;
+import com.wuxiaowei.interviewconqueror.exception.BusinessException;
 import com.wuxiaowei.interviewconqueror.exception.ThrowUtils;
 import com.wuxiaowei.interviewconqueror.mapper.QuestionMapper;
 import com.wuxiaowei.interviewconqueror.model.dto.question.QuestionEsDTO;
@@ -32,13 +32,13 @@ import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -231,6 +231,11 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         return this.page(new Page<>(current, pageSize), queryWrapper);
     }
 
+    /**
+     * 从es查询题目
+     * @param questionQueryRequest
+     * @return
+     */
     @Override
     public Page<Question> searchFromEs(QuestionQueryRequest questionQueryRequest) {
         // 获取参数
@@ -300,4 +305,29 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         return page;
     }
 
+    /**
+     * 批量删除题目
+     * @param questionIdList
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchDeleteQuestions(List<Long> questionIdList) {
+        if (CollUtil.isEmpty(questionIdList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "要删除的题目列表为空");
+        }
+
+        // 删除题目
+        boolean result = this.removeBatchByIds(questionIdList);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "删除题库失败");
+
+        // 移除题目题库关系
+        List<Long> validQuestionIdList = questionBankQuestionService.listObjs(Wrappers.lambdaQuery(QuestionBankQuestion.class)
+                        .select(QuestionBankQuestion::getQuestionId)
+                        .in(QuestionBankQuestion::getQuestionId, questionIdList)
+                , obj -> (Long) obj);
+        LambdaQueryWrapper<QuestionBankQuestion> lambdaQueryWrapper = Wrappers.lambdaQuery(QuestionBankQuestion.class)
+                .in(QuestionBankQuestion::getQuestionId, validQuestionIdList);
+        result = questionBankQuestionService.remove(lambdaQueryWrapper);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "删除题目题库关联失败");
+    }
 }

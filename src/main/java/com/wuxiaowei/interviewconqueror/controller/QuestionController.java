@@ -10,13 +10,13 @@ import com.wuxiaowei.interviewconqueror.common.ResultUtils;
 import com.wuxiaowei.interviewconqueror.constant.UserConstant;
 import com.wuxiaowei.interviewconqueror.exception.BusinessException;
 import com.wuxiaowei.interviewconqueror.exception.ThrowUtils;
-import com.wuxiaowei.interviewconqueror.model.dto.question.QuestionAddRequest;
-import com.wuxiaowei.interviewconqueror.model.dto.question.QuestionEditRequest;
-import com.wuxiaowei.interviewconqueror.model.dto.question.QuestionQueryRequest;
-import com.wuxiaowei.interviewconqueror.model.dto.question.QuestionUpdateRequest;
+import com.wuxiaowei.interviewconqueror.model.dto.question.*;
+import com.wuxiaowei.interviewconqueror.model.dto.questionBankQuestion.QuestionBankQuestionBatchAddRequest;
+import com.wuxiaowei.interviewconqueror.model.dto.questionBankQuestion.QuestionBankQuestionBatchRemoveRequest;
 import com.wuxiaowei.interviewconqueror.model.entity.Question;
 import com.wuxiaowei.interviewconqueror.model.entity.User;
 import com.wuxiaowei.interviewconqueror.model.vo.QuestionVO;
+import com.wuxiaowei.interviewconqueror.service.QuestionBankQuestionService;
 import com.wuxiaowei.interviewconqueror.service.QuestionService;
 import com.wuxiaowei.interviewconqueror.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +35,9 @@ public class QuestionController {
 
     @Resource
     private QuestionService questionService;
+
+    @Resource
+    private QuestionBankQuestionService questionBankQuestionService;
 
     @Resource
     private UserService userService;
@@ -253,5 +256,23 @@ public class QuestionController {
         Page<Question> questionPage = questionService.searchFromEs(questionQueryRequest);
         return ResultUtils.success(questionService.getQuestionVOPage(questionPage, request));
     }
+
+    /**
+     * 批量删除题目
+     * @param questionBatchDeleteRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/delete/batch")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> batchDeleteQuestions(@RequestBody QuestionBatchDeleteRequest questionBatchDeleteRequest,
+                                                      HttpServletRequest request) {
+        ThrowUtils.throwIf(questionBatchDeleteRequest == null, ErrorCode.PARAMS_ERROR);
+        questionService.batchDeleteQuestions(questionBatchDeleteRequest.getQuestionIdList());
+        return ResultUtils.success(true);
+    }
+
+
+
 
 }
