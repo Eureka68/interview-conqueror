@@ -1,6 +1,7 @@
 package com.wuxiaowei.interviewconqueror.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.jd.platform.hotkey.client.callback.JdHotKeyStore;
 import com.wuxiaowei.interviewconqueror.annotation.AuthCheck;
 import com.wuxiaowei.interviewconqueror.common.BaseResponse;
 import com.wuxiaowei.interviewconqueror.common.DeleteRequest;
@@ -151,11 +152,24 @@ public class QuestionBankController {
         ThrowUtils.throwIf(questionBankQueryRequest == null, ErrorCode.PARAMS_ERROR);
         Long id = questionBankQueryRequest.getId();
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+
+        // 生成 key
+        String key = "bank_detail_" + id;
+        // 如果是热key
+        if(JdHotKeyStore.isHotKey(key)){
+            // 从本地缓存中取值
+            Object cachedQuestionBankVO = JdHotKeyStore.get(key);
+            if(cachedQuestionBankVO != null){
+                return ResultUtils.success((QuestionBankVO) cachedQuestionBankVO);
+            }
+        }
+
         // 查询数据库
         QuestionBank questionBank = questionBankService.getById(id);
         ThrowUtils.throwIf(questionBank == null, ErrorCode.NOT_FOUND_ERROR);
         // 查询题库封装类
         QuestionBankVO questionBankVO = questionBankService.getQuestionBankVO(questionBank, request);
+
         // 是否要关联查询题库下的题目列表
         boolean needQueryQuestionList = questionBankQueryRequest.isNeedQueryQuestionList();
         if (needQueryQuestionList) {
@@ -168,6 +182,8 @@ public class QuestionBankController {
             Page<Question> questionPage = questionService.listQuestionPage(questionQueryRequest);
             questionBankVO.setQuestionPage(questionService.getQuestionVOPage(questionPage, request));
         }
+
+        JdHotKeyStore.smartSet(key, questionBankVO);
         // 获取封装类
         return ResultUtils.success(questionBankVO);
     }
