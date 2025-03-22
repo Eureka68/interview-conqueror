@@ -6,12 +6,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-/**
- * Spring 上下文获取工具
- *
- * @author <a href="https://github.com/liwuxiaowei">程序员鱼皮</a>
- * @from <a href="https://wuxiaowei.icu">编程导航知识星球</a>
- */
 @Component
 public class SpringContextUtils implements ApplicationContextAware {
 

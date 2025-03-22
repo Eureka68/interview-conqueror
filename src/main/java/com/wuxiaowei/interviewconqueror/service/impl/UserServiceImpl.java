@@ -40,7 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     /**
      * 盐值，混淆密码
      */
-    public static final String SALT = "yupi";
+    public static final String SALT = "wuxiaowei";
     private final RedissonClient redissonClient;
 
     public UserServiceImpl(RedissonClient redissonClient) {

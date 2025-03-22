@@ -35,12 +35,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
-/**
- * 题库接口
- *
- * @author <a href="https://github.com/liwuxiaowei">程序员鱼皮</a>
- * @from <a href="https://www.code-nav.cn">编程导航学习圈</a>
- */
 @RestController
 @RequestMapping("/questionBank")
 @Slf4j
